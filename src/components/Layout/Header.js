@@ -12,7 +12,7 @@ export default function Header(props){
     <React.Fragment>
         <header className={styles.header}>
             <h1>Meals</h1>
-            <HeaderCartButton/>
+            <HeaderCartButton onClick={props.onShowCart}/>
         </header>
         <div className={styles['main-image']}>
             <img src={mealsPhoto} alt='meals'/>
