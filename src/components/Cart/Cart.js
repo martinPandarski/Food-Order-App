@@ -1,12 +1,14 @@
 import styles from "./Cart.module.css";
 import Modal from "../UI/Modal";
-import { useContext, useState } from "react";
+import { Fragment, useContext, useState } from "react";
 import CartContext from "../../store/CartContext";
 import CartItem from "./CartItem";
 import Checkout from "./Checkout";
 
 export default function Cart(props) {
-  const [showCheckout, setShowCheckout] = useState(false)
+  const [showCheckout, setShowCheckout] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [didSubmit, setDidSubmit] = useState(false)
   const cartContext = useContext(CartContext);
   const totalAmount = `$${cartContext.totalAmount.toFixed(2)}`;
   const hasItems = cartContext.items.length > 0;
@@ -16,11 +18,22 @@ export default function Cart(props) {
   };
 
   const cartItemAddHandler = (item) => {
-    cartContext.addItem({...item, amount: 1})
+    cartContext.addItem({ ...item, amount: 1 })
   };
 
   const orderHandler = () => {
     setShowCheckout(true)
+  }
+
+
+  const submitOrderHandler = async (userData) => {
+    setIsSubmitting(true)
+    const postOrder = await fetch('https://foodapp-86e5b-default-rtdb.europe-west1.firebasedatabase.app/orders.json', {
+      method: 'POST',
+      body: JSON.stringify({ user: userData, orderedItems: cartContext.items })
+    });
+    setIsSubmitting(false);
+    setDidSubmit(true)
   }
 
   const cartItems = (
@@ -38,21 +51,30 @@ export default function Cart(props) {
     </ul>
   );
 
-  return (
-    <Modal onClose={props.onClose}>
-      {cartItems}
+const cartModalContent = <Fragment>
+   {cartItems}
       <div className={styles.total}>
         <span>Total Amount</span>
         <span>{totalAmount}</span>
       </div>
-      {showCheckout ? <Checkout onCancel={props.onClose}/> : 
-          <div className={styles.actions}>
+      {showCheckout ? <Checkout onConfirm={submitOrderHandler} onCancel={props.onClose} /> :
+        <div className={styles.actions}>
           <button className={styles["button--alt"]} onClick={props.onClose}>
             Close
           </button>
           {hasItems && <button className={styles.button} onClick={orderHandler} >Order</button>}
         </div>
-         }
+      }
+</Fragment>
+
+const isSubmittingModalContent = <p>Sending order data...</p>
+
+const didSubmitModalContent = <p>Successfully sent the order!</p>
+  return (
+    <Modal onClose={props.onClose}>
+     {!isSubmitting && !didSubmit && cartModalContent }
+     {isSubmitting && isSubmittingModalContent}
+     {!isSubmitting && didSubmit && didSubmitModalContent}
     </Modal>
   );
 }
